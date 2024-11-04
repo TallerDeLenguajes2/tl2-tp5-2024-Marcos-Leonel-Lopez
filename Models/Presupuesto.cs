@@ -42,7 +42,8 @@ public class Presupuesto
         return monto * (1 + Constantes.IVA);
     }
 
-    public int CantidadProducts(){
+    public int CantidadProducts()
+    {
         int sum = 0;
         foreach (var d in detalle)
         {
@@ -50,5 +51,7 @@ public class Presupuesto
         }
         return sum;
     }
-
+        public void setId(int id){
+        this.idPresupuesto = id;
+    }
 }

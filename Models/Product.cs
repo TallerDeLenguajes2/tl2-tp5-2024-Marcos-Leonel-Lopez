@@ -20,4 +20,7 @@ public class Product{
     public int IdProducto { get => idProducto;}
     public string Descripcion { get => descripcion; }
     public int Precio { get => precio; }
+    public void setId(int id){
+        this.idProducto = id;
+    }
 }
