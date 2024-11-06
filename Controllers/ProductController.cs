@@ -4,7 +4,7 @@ using ProductRepo;
 namespace MiWebAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 
 public class ProductController : ControllerBase
 {
@@ -15,21 +15,21 @@ public class ProductController : ControllerBase
         _productRepository = productoRepository; // Usa la instancia inyectada
         _productValidator = productValidator;
     }
-    [HttpGet("/getProducts")]
+    [HttpGet]
     public ActionResult getProducts()
     {
         var res = _productRepository.GetAll();
         return Ok(res);
     }
 
-    [HttpGet("/getProductsById/{id}")]
-    public ActionResult getProductsPorId(int id)
-    {
-        var res = _productRepository.GetById(id);
-        return Ok(res);
-    }
+    // [HttpGet("getProductsById/{id}")]
+    // public ActionResult getProductsPorId(int id)
+    // {
+    //     var res = _productRepository.GetById(id);
+    //     return Ok(res);
+    // }
 
-    [HttpPost("/createProduct")]
+    [HttpPost]
     public ActionResult createProduct([FromBody] Product newProduct)
     {
         ValidationResult verification = _productValidator.Validate(newProduct);
@@ -38,7 +38,7 @@ public class ProductController : ControllerBase
         return Ok(new { message = "Producto creado", newProduct = res });
     }
 
-    [HttpPut("/updateProduct/{id}")]
+    [HttpPut("{id}")]
     public ActionResult updateProduct([FromBody] Product newProduct, int id)
     {
         ValidationResult verification = _productValidator.Validate(newProduct);
@@ -48,13 +48,13 @@ public class ProductController : ControllerBase
         return Ok(new { message = "Producto actualizado", newProduct = res });
     }
 
-    [HttpDelete("/deleteProduct/{id}")]
-    public ActionResult deleteProduct(int id)
-    {
-        var res = _productRepository.Remove(id);
-        if (!res) return NotFound(new { message = "Producto invalido" });
-        return Ok(new { message = "Producto borrado" });
-    }
+    // [HttpDelete("deleteProduct/{id}")]
+    // public ActionResult deleteProduct(int id)
+    // {
+    //     var res = _productRepository.Remove(id);
+    //     if (!res) return NotFound(new { message = "Producto invalido" });
+    //     return Ok(new { message = "Producto borrado" });
+    // }
 
 
 }

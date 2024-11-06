@@ -160,6 +160,7 @@ namespace PresupuestoRepo
                 {
                     command.Parameters.AddWithValue("@nombreDestinatario", obj.NombreDestinatario);
                     command.Parameters.AddWithValue("@fechaCreacion", DateTime.Now);
+                    obj.setId(Convert.ToInt32(command.ExecuteScalar()));
                     command.ExecuteNonQuery();
                 }
                 // Insertar los detalles del presupuesto
@@ -175,7 +176,6 @@ namespace PresupuestoRepo
                 }
                 connection.Close();
             }
-            this.auxSetId(obj);
             return obj;
         }
         public bool Remove(int id)
@@ -199,6 +199,7 @@ namespace PresupuestoRepo
                 using (var commandPresupuesto = new SqliteCommand(queryDeletePresupuesto, connection))
                 {
                     commandPresupuesto.Parameters.AddWithValue("@id", id);
+                    commandPresupuesto.ExecuteNonQuery();
                     return true;
                 }
 
@@ -215,38 +216,35 @@ namespace PresupuestoRepo
             using (var connection = new SqliteConnection(cadenaConexion))
             {
                 connection.Open();
-
-                using (var transaction = connection.BeginTransaction())
+                // Actualizar el presupuesto
+                using (var command = new SqliteCommand(queryUpdatePresupuesto, connection))
                 {
-                        // Actualizar el presupuesto
-                        using (var command = new SqliteCommand(queryUpdatePresupuesto, connection, transaction))
-                        {
-                            command.Parameters.AddWithValue("@nombreDestinatario", obj.NombreDestinatario);
-                            command.Parameters.AddWithValue("@fechaCreacion", DateTime.Now);
-                            command.Parameters.AddWithValue("@id", id);
-                            command.ExecuteNonQuery();
-                        }
-
-                        // Eliminar detalles actuales
-                        using (var deleteCommand = new SqliteCommand(queryDeleteDetalles, connection, transaction))
-                        {
-                            deleteCommand.Parameters.AddWithValue("@id", id);
-                            deleteCommand.ExecuteNonQuery();
-                        }
-
-                        // Insertar los nuevos detalles
-                        foreach (var detalle in obj.Detalle)
-                        {
-                            using (var detalleCommand = new SqliteCommand(queryInsertDetalle, connection, transaction))
-                            {
-                                detalleCommand.Parameters.AddWithValue("@idPresupuesto", id);
-                                detalleCommand.Parameters.AddWithValue("@idProducto", detalle.Product.IdProducto);
-                                detalleCommand.Parameters.AddWithValue("@cantidad", detalle.Cantidad);
-                                detalleCommand.ExecuteNonQuery();
-                            }
-                        }
-
+                    command.Parameters.AddWithValue("@nombreDestinatario", obj.NombreDestinatario);
+                    command.Parameters.AddWithValue("@fechaCreacion", DateTime.Now);
+                    command.Parameters.AddWithValue("@id", id);
+                    command.ExecuteNonQuery();
                 }
+
+                // Eliminar detalles actuales
+                using (var deleteCommand = new SqliteCommand(queryDeleteDetalles, connection))
+                {
+                    deleteCommand.Parameters.AddWithValue("@id", id);
+                    deleteCommand.ExecuteNonQuery();
+                }
+
+                // Insertar los nuevos detalles
+                foreach (var detalle in obj.Detalle)
+                {
+                    using (var detalleCommand = new SqliteCommand(queryInsertDetalle, connection))
+                    {
+                        detalleCommand.Parameters.AddWithValue("@idPresupuesto", id);
+                        detalleCommand.Parameters.AddWithValue("@idProducto", detalle.Product.IdProducto);
+                        detalleCommand.Parameters.AddWithValue("@cantidad", detalle.Cantidad);
+                        detalleCommand.ExecuteNonQuery();
+                    }
+                }
+                connection.Close();
+
             }
             this.auxSetId(obj);
             return obj;
@@ -257,3 +255,23 @@ namespace PresupuestoRepo
 
 
 
+// Para tu primera entrega, te proponemos que crees un programa que permita emular el registro y almacenamiento de usuarios en una base de datos. Hazlo utilizando el concepto de funciones, diccionarios, bucles y condicionales.
+// Objetivos
+// Practicar el concepto de funciones.
+// Desarrollar la parte lógica para el registro de usuarios.
+// Requisitos
+// Diccionarios (guardado de datos)
+// Input (solicitud de datos)
+// Variables
+// If (chequeo de datos)
+// While (iteración para el programa, sea para agregar, loguear o mostrar)
+// For (recorrer datos y para búsqueda)
+// Print
+// Funciones separadas para registro, almacenamiento y muestra
+// Recomendaciones
+// El formato de registro es: Nombre de usuario y Contraseña.
+// Utilizar una función para almacenar la información y otra función para mostrar la información.
+// Utilizar un diccionario para almacenar dicha información, con el par usuario-contraseña (clave-valor).
+// Utilizar otra función para el login de usuarios, comprobando que la contraseña coincida con el usuario.
+// Formato
+// El proyecto debe compartirse utilizando Colab bajo el nombre “ArmaTuLogin+Apellido“, por ejemplo “ArmaTuLogin+Fernandez“
