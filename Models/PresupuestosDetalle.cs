@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 public class PresupuestosDetalle
 {
     private Product producto;
@@ -7,12 +9,13 @@ public class PresupuestosDetalle
     public PresupuestosDetalle(){
 
     }
+    [JsonConstructor]
     public PresupuestosDetalle(Product producto,int cantidad){
         this.producto = producto;
         this.cantidad = cantidad;
     }
 
-    public Product Product { get => producto;}
+    public Product Producto { get => producto;}
     public int Cantidad { get => cantidad;}
 
 

@@ -6,26 +6,26 @@ namespace MiWebAPI.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 
-public class ProductController : ControllerBase
+public class ProductoController : ControllerBase
 {
-    private readonly ProductRepository _productRepository;
+    private readonly ProductoRepository _productoRepository;
     private readonly ProductValidator _productValidator;
-    public ProductController(ProductRepository productoRepository, ProductValidator productValidator)
+    public ProductoController(ProductoRepository productoRepository, ProductValidator productValidator)
     {
-        _productRepository = productoRepository; // Usa la instancia inyectada
+        _productoRepository = productoRepository; // Usa la instancia inyectada
         _productValidator = productValidator;
     }
     [HttpGet]
     public ActionResult getProducts()
     {
-        var res = _productRepository.GetAll();
+        var res = _productoRepository.GetAll();
         return Ok(res);
     }
 
     // [HttpGet("getProductsById/{id}")]
     // public ActionResult getProductsPorId(int id)
     // {
-    //     var res = _productRepository.GetById(id);
+    //     var res = _productoRepository.GetById(id);
     //     return Ok(res);
     // }
 
@@ -34,7 +34,7 @@ public class ProductController : ControllerBase
     {
         ValidationResult verification = _productValidator.Validate(newProduct);
         if (!verification.IsValid) return NotFound(new { message = "Producto invalido" });
-        var res = _productRepository.Create(newProduct);
+        var res = _productoRepository.Create(newProduct);
         return Ok(new { message = "Producto creado", newProduct = res });
     }
 
@@ -43,7 +43,7 @@ public class ProductController : ControllerBase
     {
         ValidationResult verification = _productValidator.Validate(newProduct);
         if (!verification.IsValid) return NotFound(new { message = "Producto invalido" });
-        var res = _productRepository.Update(newProduct, id);
+        var res = _productoRepository.Update(newProduct, id);
         if(res == null) return NotFound(new { message = "Producto invalido" });
         return Ok(new { message = "Producto actualizado", newProduct = res });
     }
@@ -51,7 +51,7 @@ public class ProductController : ControllerBase
     // [HttpDelete("deleteProduct/{id}")]
     // public ActionResult deleteProduct(int id)
     // {
-    //     var res = _productRepository.Remove(id);
+    //     var res = _productoRepository.Remove(id);
     //     if (!res) return NotFound(new { message = "Producto invalido" });
     //     return Ok(new { message = "Producto borrado" });
     // }

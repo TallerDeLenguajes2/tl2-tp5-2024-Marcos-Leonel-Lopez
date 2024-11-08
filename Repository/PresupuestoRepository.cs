@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using ProductRepo;
 
 // private int idPresupuesto;  => auto incremental
 // private string nombreDestinatario; => viene de afuera
@@ -9,7 +10,8 @@ using Microsoft.Data.Sqlite;
 
 namespace PresupuestoRepo
 {
-    public class PresupuestoRepository : IRepository<Presupuesto>
+    //public class PresupuestoRepository : IRepository<Presupuesto>
+    public class PresupuestoRepository
     {
         private string cadenaConexion = "Data Source=db/Tienda.db;Cache=Shared";
         private int obtenerId(Presupuesto presupuesto)
@@ -42,11 +44,10 @@ namespace PresupuestoRepo
             List<Presupuesto> presupuestos = new List<Presupuesto>();
             string queryPresupuestos = "SELECT idPresupuesto, NombreDestinatario FROM Presupuestos";
             string queryDetalles = @"
-                                    SELECT pd.idProducto, pd.Cantidad, p.Descripcion, p.Precio
-                                    FROM PresupuestoDetalle pd
-                                    INNER JOIN Productos p USING(idProducto)
-                                    WHERE pd.idPresupuesto = @idPresupuesto";
-
+                            SELECT pd.idProducto, pd.Cantidad, p.Descripcion, p.Precio
+                            FROM PresupuestosDetalle pd
+                            INNER JOIN Productos p USING(idProducto)
+                            WHERE pd.idPresupuesto = @idPresupuesto";
 
             using (var connection = new SqliteConnection(cadenaConexion))
             {
@@ -60,29 +61,30 @@ namespace PresupuestoRepo
                             int idPresupuesto = reader.GetInt32(0);
                             string nombreDestinatario = reader.GetString(1);
 
-                            //----
+                            // Crear lista de detalles para cada presupuesto usando una nueva conexión
                             List<PresupuestosDetalle> detalles = new List<PresupuestosDetalle>();
-                            using (SqliteCommand detalleCommand = new SqliteCommand(queryDetalles, connection))
+                            using (var detalleConnection = new SqliteConnection(cadenaConexion))
                             {
-                                detalleCommand.Parameters.AddWithValue("@idPresupuesto", idPresupuesto);
-                                using (SqliteDataReader detalleReader = command.ExecuteReader())
+                                detalleConnection.Open();
+                                using (SqliteCommand detalleCommand = new SqliteCommand(queryDetalles, detalleConnection))
                                 {
-                                    while (detalleReader.Read())
+                                    detalleCommand.Parameters.AddWithValue("@idPresupuesto", idPresupuesto);
+                                    using (SqliteDataReader detalleReader = detalleCommand.ExecuteReader())
                                     {
-                                        int idProducto = detalleReader.GetInt32(0);
-                                        int cantidad = detalleReader.GetInt32(1);
-                                        string descripcion = detalleReader.GetString(2);
-                                        int precio = detalleReader.GetInt32(3);
+                                        while (detalleReader.Read())
+                                        {
+                                            int idProducto = detalleReader.GetInt32(0);
+                                            int cantidad = detalleReader.GetInt32(1);
+                                            string descripcion = detalleReader.GetString(2);
+                                            int precio = detalleReader.GetInt32(3);
 
-                                        Product producto = new Product(idProducto, descripcion, precio);
-
-                                        PresupuestosDetalle detalle = new PresupuestosDetalle(producto, cantidad);
-
-                                        detalles.Add(detalle);
+                                            Product producto = new Product(idProducto, descripcion, precio);
+                                            PresupuestosDetalle detalle = new PresupuestosDetalle(producto, cantidad);
+                                            detalles.Add(detalle);
+                                        }
                                     }
                                 }
                             }
-                            //----
                             presupuestos.Add(new Presupuesto(idPresupuesto, nombreDestinatario, detalles));
                         }
                     }
@@ -93,14 +95,13 @@ namespace PresupuestoRepo
         }
         public Presupuesto GetById(int id)
         {
-            Presupuesto presupuesto = null;
+            Presupuesto presupuesto = new Presupuesto();
             string queryPresupuestos = "SELECT idPresupuesto, NombreDestinatario FROM Presupuestos WHERE idPresupuesto = @id";
             string queryDetalles = @"
-                                    SELECT pd.idProducto, pd.Cantidad, p.Descripcion, p.Precio
-                                    FROM PresupuestoDetalle pd
-                                    INNER JOIN Productos p USING(idProducto)
-                                    WHERE pd.idPresupuesto = @idPresupuesto";
-
+                            SELECT pd.idProducto, pd.Cantidad, p.Descripcion, p.Precio
+                            FROM PresupuestosDetalle pd
+                            INNER JOIN Productos p USING(idProducto)
+                            WHERE pd.idPresupuesto = @idPresupuesto";
 
             using (var connection = new SqliteConnection(cadenaConexion))
             {
@@ -109,20 +110,23 @@ namespace PresupuestoRepo
                 {
                     command.Parameters.Add(new SqliteParameter("@id", id));
 
-
                     using (SqliteDataReader reader = command.ExecuteReader())
                     {
-                        while (reader.Read())
+                        if (reader.Read()) // Solo si encontramos un presupuesto
                         {
                             int idPresupuesto = reader.GetInt32(0);
                             string nombreDestinatario = reader.GetString(1);
 
-                            //----
+                            // Cerrar el lector antes de ejecutar la consulta de detalles
+                            reader.Close();
+
+                            // Obtener los detalles
                             List<PresupuestosDetalle> detalles = new List<PresupuestosDetalle>();
                             using (SqliteCommand detalleCommand = new SqliteCommand(queryDetalles, connection))
                             {
-                                detalleCommand.Parameters.AddWithValue("@idPresupuesto", id);
-                                using (SqliteDataReader detalleReader = command.ExecuteReader())
+                                detalleCommand.Parameters.AddWithValue("@idPresupuesto", idPresupuesto);
+
+                                using (SqliteDataReader detalleReader = detalleCommand.ExecuteReader())
                                 {
                                     while (detalleReader.Read())
                                     {
@@ -132,14 +136,12 @@ namespace PresupuestoRepo
                                         int precio = detalleReader.GetInt32(3);
 
                                         Product producto = new Product(idProducto, descripcion, precio);
-
                                         PresupuestosDetalle detalle = new PresupuestosDetalle(producto, cantidad);
-
                                         detalles.Add(detalle);
                                     }
                                 }
                             }
-                            //----
+
                             presupuesto = new Presupuesto(idPresupuesto, nombreDestinatario, detalles);
                         }
                     }
@@ -151,7 +153,7 @@ namespace PresupuestoRepo
         public Presupuesto Create(Presupuesto obj)
         {
             string queryInsertPresupuesto = "INSERT INTO Presupuestos (NombreDestinatario, FechaCreacion) VALUES (@nombreDestinatario, @fechaCreacion); SELECT last_insert_rowid();";
-            string queryInsertDetalle = "INSERT INTO PresupuestoDetalle (idPresupuesto, idProducto, Cantidad) VALUES (@idPresupuesto, @idProducto, @cantidad);";
+            //string queryInsertDetalle = "INSERT INTO PresupuestosDetalle (idPresupuesto, idProducto, Cantidad) VALUES (@idPresupuesto, @idProducto, @cantidad);";
             using (var connection = new SqliteConnection(cadenaConexion))
             {
                 connection.Open();
@@ -164,16 +166,6 @@ namespace PresupuestoRepo
                     command.ExecuteNonQuery();
                 }
                 // Insertar los detalles del presupuesto
-                foreach (var detalle in obj.Detalle)
-                {
-                    using (var detalleCommand = new SqliteCommand(queryInsertDetalle, connection))
-                    {
-                        detalleCommand.Parameters.AddWithValue("@idPresupuesto", obj.IdPresupuesto);
-                        detalleCommand.Parameters.AddWithValue("@idProducto", detalle.Product.IdProducto);
-                        detalleCommand.Parameters.AddWithValue("@cantidad", detalle.Cantidad);
-                        detalleCommand.ExecuteNonQuery();
-                    }
-                }
                 connection.Close();
             }
             return obj;
@@ -181,7 +173,7 @@ namespace PresupuestoRepo
         public bool Remove(int id)
         {
             string queryDeletePresupuesto = "DELETE FROM Presupuestos WHERE idPresupuesto = @id";
-            string queryDeleteDetalles = "DELETE FROM PresupuestoDetalle WHERE idPresupuesto = @id";
+            string queryDeleteDetalles = "DELETE FROM PresupuestosDetalle WHERE idPresupuesto = @id";
 
             using (var connection = new SqliteConnection(cadenaConexion))
             {
@@ -202,55 +194,75 @@ namespace PresupuestoRepo
                     commandPresupuesto.ExecuteNonQuery();
                     return true;
                 }
-
                 connection.Close();
             }
             return false;
         }
-        public Presupuesto Update(Presupuesto obj, int id)
+        public Presupuesto Update(PresupuestosDetalle pd, int id)
         {
-            string queryUpdatePresupuesto = "UPDATE Presupuestos SET NombreDestinatario = @nombreDestinatario, FechaCreacion = @fechaCreacion WHERE idPresupuesto = @id";
-            string queryDeleteDetalles = "DELETE FROM PresupuestoDetalle WHERE idPresupuesto = @id";
-            string queryInsertDetalle = "INSERT INTO PresupuestoDetalle (idPresupuesto, idProducto, Cantidad) VALUES (@idPresupuesto, @idProducto, @cantidad)";
+            ProductoRepository _prodRepo = new ProductoRepository(); // instancia para buscar producto
 
-            using (var connection = new SqliteConnection(cadenaConexion))
+            Presupuesto nuevoPresupuesto = new Presupuesto();
+            var prodBuscado = _prodRepo.GetById(pd.Producto.IdProducto);
+
+            if (prodBuscado != null)
             {
-                connection.Open();
-                // Actualizar el presupuesto
-                using (var command = new SqliteCommand(queryUpdatePresupuesto, connection))
-                {
-                    command.Parameters.AddWithValue("@nombreDestinatario", obj.NombreDestinatario);
-                    command.Parameters.AddWithValue("@fechaCreacion", DateTime.Now);
-                    command.Parameters.AddWithValue("@id", id);
-                    command.ExecuteNonQuery();
-                }
+                // Primero, verificar si ya existe el par (idPresupuesto, idProducto)
+                string queryCheckExistence = "SELECT COUNT(*) FROM PresupuestosDetalle WHERE idPresupuesto = @idPresupuesto AND idProducto = @idProducto";
+                bool existe = false;
 
-                // Eliminar detalles actuales
-                using (var deleteCommand = new SqliteCommand(queryDeleteDetalles, connection))
+                using (var connection = new SqliteConnection(cadenaConexion))
                 {
-                    deleteCommand.Parameters.AddWithValue("@id", id);
-                    deleteCommand.ExecuteNonQuery();
-                }
-
-                // Insertar los nuevos detalles
-                foreach (var detalle in obj.Detalle)
-                {
-                    using (var detalleCommand = new SqliteCommand(queryInsertDetalle, connection))
+                    connection.Open();
+                    using (var command = new SqliteCommand(queryCheckExistence, connection))
                     {
-                        detalleCommand.Parameters.AddWithValue("@idPresupuesto", id);
-                        detalleCommand.Parameters.AddWithValue("@idProducto", detalle.Product.IdProducto);
-                        detalleCommand.Parameters.AddWithValue("@cantidad", detalle.Cantidad);
-                        detalleCommand.ExecuteNonQuery();
+                        command.Parameters.AddWithValue("@idPresupuesto", id);
+                        command.Parameters.AddWithValue("@idProducto", pd.Producto.IdProducto);
+
+                        var count = Convert.ToInt32(command.ExecuteScalar());
+                        existe = count > 0; // Si existe al menos una tupla, entonces existe = true
+                    }
+                    connection.Close();
+                }
+
+                // Si existe, se hace un UPDATE, si no, se hace un INSERT
+                if (existe)
+                {
+                    string queryUpdateDetalle = "UPDATE PresupuestosDetalle SET Cantidad = @cantidad WHERE idPresupuesto = @idPresupuesto AND idProducto = @idProducto";
+                    using (var connection = new SqliteConnection(cadenaConexion))
+                    {
+                        connection.Open();
+                        using (var command = new SqliteCommand(queryUpdateDetalle, connection))
+                        {
+                            command.Parameters.AddWithValue("@idPresupuesto", id);
+                            command.Parameters.AddWithValue("@idProducto", pd.Producto.IdProducto);
+                            command.Parameters.AddWithValue("@cantidad", pd.Cantidad);
+                            command.ExecuteNonQuery();
+                        }
+                        connection.Close();
                     }
                 }
-                connection.Close();
-
+                else
+                {
+                    string queryInsertDetalle = "INSERT INTO PresupuestosDetalle (idPresupuesto, idProducto, Cantidad) VALUES (@idPresupuesto, @idProducto, @cantidad)";
+                    using (var connection = new SqliteConnection(cadenaConexion))
+                    {
+                        connection.Open();
+                        using (var command = new SqliteCommand(queryInsertDetalle, connection))
+                        {
+                            command.Parameters.AddWithValue("@idPresupuesto", id);
+                            command.Parameters.AddWithValue("@idProducto", pd.Producto.IdProducto);
+                            command.Parameters.AddWithValue("@cantidad", pd.Cantidad);
+                            command.ExecuteNonQuery();
+                        }
+                        connection.Close();
+                    }
+                }
+                nuevoPresupuesto = this.GetById(id);
             }
-            this.auxSetId(obj);
-            return obj;
+            return nuevoPresupuesto;
         }
     }
-
 }
 
 

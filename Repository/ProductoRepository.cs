@@ -2,7 +2,8 @@ using Microsoft.Data.Sqlite;
 
 namespace ProductRepo
 {
-    public class ProductRepository : IRepository<Product>
+    //public class ProductoRepository : IRepository<Product>
+    public class ProductoRepository
     {
         private string cadenaConexion = "Data Source=db/Tienda.db;Cache=Shared";
         private int obtenerId(Product prod)
@@ -111,7 +112,6 @@ namespace ProductRepo
             //---
             return producto;
         }
-
         public bool Remove(int id)
         {
             Product producto = this.GetById(id);

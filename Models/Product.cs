@@ -6,14 +6,14 @@ public class Product{
     public Product(){
 
     }
-    [JsonConstructor]// fundamental para poder crear el objeto a partir del body
     public Product(string descripcion,int precio){ // necesario utilizar el mismo nombre en los parametros y las variables
         this.descripcion = descripcion;
         this.precio = precio;
     }
-    public Product(int id,string desc,int precio){
-        this.idProducto = id;
-        this.descripcion = desc;
+    [JsonConstructor]// fundamental para poder crear el objeto a partir del body
+    public Product(int idProducto,string descripcion,int precio){
+        this.idProducto = idProducto;
+        this.descripcion = descripcion;
         this.precio = precio;
     }
 
